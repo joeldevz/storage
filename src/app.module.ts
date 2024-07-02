@@ -17,6 +17,8 @@ import { S3Storage } from './infrastructure/storage/s3.storage';
 import { CONFIG } from './config';
 import { JwtService } from './infrastructure/auth/jwt.service';
 import { config } from 'dotenv';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 config();
 console.log(CONFIG);
 @Module({
@@ -38,7 +40,7 @@ console.log(CONFIG);
     }),
     PassportModule,
   ],
-  controllers: [FileController],
+  controllers: [FileController, AppController],
   providers: [
     FileService,
     UploadFileUseCase,
@@ -48,6 +50,7 @@ console.log(CONFIG);
     RolesGuard,
     S3Storage,
     JwtService,
+    AppService,
   ],
 })
 export class AppModule {}
