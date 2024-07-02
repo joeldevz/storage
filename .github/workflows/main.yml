@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker-build:
+    name: Build Docker Container
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: "0"
+      - name: restore timestamps
+        uses: chetan/git-restore-mtime-action@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to Registry
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          registry: ${{ secrets.AWS_ECR_REGISTRY }}
+      - name: Build and push docker image
+        uses: docker/build-push-action@v2.9.0
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.AWS_ECR_REGISTRY }}/clasing/storage:latest
+            ${{ secrets.AWS_ECR_REGISTRY }}/clasing/storage:staging-${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_BACKEND_API_URL=${{ secrets.NEXT_PUBLIC_BACKEND_API_URL }}
+  deploy:
+    needs: ["docker-build"]
+    name: Deploy to AWS EKS
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - name: Connect to EKS Cluster
+        run: aws eks --region ${{ secrets.AWS_DEFAULT_REGION }} update-kubeconfig --name ${{ secrets.AWS_EKS_CLUSTER }}
+      - uses: azure/setup-kubectl@v1
+        with:
+          version: "v1.21.3"
+        id: install
+      - name: deploy to cluster
+        run: kubectl --namespace=production --record deployment.apps/clasing-storage set image clasing-storage=${{ secrets.AWS_ECR_REGISTRY }}/clasing/storage:staging-${{ github.sha }}

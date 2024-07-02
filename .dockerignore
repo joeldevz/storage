@@ -1,0 +1,10 @@
+node_modules
+.github
+.storybook
+dist
+build
+.cache
+.next
+*.log
+Dockerfile
+docker-compose.yml

@@ -10,7 +10,6 @@ import {
   Req,
   NotFoundException,
   Body,
-  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../infrastructure/auth/jwt-auth.guard';
