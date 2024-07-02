@@ -14,12 +14,14 @@ export class S3Storage {
     file: Express.Multer.File,
     path: string,
   ): Promise<AWS.S3.ManagedUpload.SendData> {
+
     const params = {
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: path,
       Body: file.buffer,
       ACL: 'private', // or 'public-read' depending on your requirements
     };
+    console.log(params)
 
     return this.s3.upload(params).promise();
   }
